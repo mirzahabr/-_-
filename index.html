@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Очень сильно люблю</title>
+    <style>
+      :root {
+        --background: #FDEFEF;
+        --ink: #b97883;
+        --accent: #d85f78;
+        --accent-deep: #b84b66;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+
+      body {
+        position: fixed;
+        inset: 0;
+        height: 100vh;
+        height: 100dvh;
+        background-color: var(--background);
+        background-image: url("assets/wallpaper.png");
+        background-repeat: repeat;
+        background-position: top left;
+        background-size: 420px 426px;
+        color: var(--ink);
+        overflow: hidden;
+        font-family: "Brush Script MT", "Segoe Script", "Apple Chancery", cursive;
+      }
+
+      .scene {
+        position: relative;
+        display: grid;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        place-items: center;
+        padding: 32px 20px;
+        overflow: hidden;
+        isolation: isolate;
+      }
+
+      .scene::before {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        background: rgba(255, 246, 248, 0.22);
+        content: "";
+      }
+
+      .message {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        justify-items: center;
+        width: min(980px, 96vw);
+        gap: 22px;
+        text-align: center;
+      }
+
+      .scene.is-open .message {
+        pointer-events: none;
+        animation: messageOut 0.7s ease forwards;
+      }
+
+      .handwriting {
+        width: 100%;
+        max-width: 980px;
+        height: auto;
+        filter: drop-shadow(0 10px 22px rgba(177, 96, 114, 0.12));
+      }
+
+      .handwriting text {
+        stroke: currentColor;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 1250;
+        stroke-dashoffset: 1250;
+        fill: transparent;
+        paint-order: stroke fill;
+        animation:
+          write 3.1s ease forwards,
+          fillText 0.9s ease forwards 2.45s;
+      }
+
+      .handwriting .accent {
+        color: var(--accent);
+        stroke-width: 2.8;
+        animation-delay: 0.9s, 3.75s;
+      }
+
+      .continue {
+        appearance: none;
+        border: 1px solid rgba(184, 75, 102, 0.28);
+        border-radius: 999px;
+        padding: 14px 34px 15px;
+        background: rgba(255, 248, 250, 0.82);
+        box-shadow:
+          0 14px 30px rgba(194, 96, 118, 0.16),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+        color: var(--accent-deep);
+        cursor: pointer;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(18px, 3vw, 22px);
+        letter-spacing: 0;
+        opacity: 0;
+        transform: translateY(14px);
+        animation: fadeUp 0.9s ease forwards 4.65s;
+      }
+
+      .continue:hover {
+        background: rgba(255, 252, 253, 0.94);
+      }
+
+      .confetti-canvas {
+        position: fixed;
+        inset: 0;
+        z-index: 8;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .letter-stage {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: grid;
+        place-items: center;
+        padding: 28px 18px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .scene.is-open .letter-stage {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .letter-wrap {
+        position: relative;
+        display: grid;
+        width: min(760px, 92vw);
+        min-height: min(720px, 86dvh);
+        place-items: center;
+        transform: translateY(18px) scale(0.96);
+        opacity: 0;
+      }
+
+      .scene.is-open .letter-wrap {
+        animation: letterWrapIn 0.8s ease forwards 0.25s;
+      }
+
+      .letter-paper {
+        position: relative;
+        width: min(610px, 86vw);
+        max-height: min(660px, 78dvh);
+        padding: clamp(22px, 4vw, 42px);
+        border: 1px solid rgba(184, 75, 102, 0.34);
+        border-radius: 18px;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.66) 1px, transparent 1px) 0 44px / 100% 32px,
+          linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 246, 249, 0.94));
+        box-shadow:
+          0 0 0 4px rgba(255, 232, 238, 0.72),
+          0 24px 52px rgba(139, 70, 88, 0.2),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.74),
+          inset 0 0 0 5px rgba(255, 238, 243, 0.58);
+        color: #8f5361;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(15px, 2vw, 18px);
+        line-height: 1.58;
+        letter-spacing: 0;
+        opacity: 0;
+        overflow-y: auto;
+        transform: translateY(26px) scale(0.92);
+        transform-origin: 50% 50%;
+      }
+
+      .letter-paper p {
+        margin: 0 0 1em;
+      }
+
+      .letter-paper p:last-child {
+        margin-bottom: 0;
+      }
+
+      .scene.is-open .letter-paper {
+        animation: unfoldLetter 1s cubic-bezier(0.2, 0.78, 0.18, 1) forwards 0.55s;
+      }
+
+      .decor {
+        position: absolute;
+        z-index: -1;
+        width: var(--width);
+        height: auto;
+        opacity: 0;
+        filter: drop-shadow(0 16px 24px rgba(151, 86, 103, 0.14));
+        transform: translateY(16px) rotate(var(--rotate));
+        animation: decorIn 1.1s ease forwards var(--delay);
+        pointer-events: none;
+      }
+
+      .decor:nth-of-type(1) {
+        --width: 264px;
+        --rotate: -14deg;
+        --delay: 2.4s;
+        left: 5%;
+        top: 10%;
+      }
+
+      .decor:nth-of-type(2) {
+        --width: 231px;
+        --rotate: 11deg;
+        --delay: 2.75s;
+        right: 6%;
+        top: 11%;
+      }
+
+      .decor:nth-of-type(3) {
+        --width: 249px;
+        --rotate: -9deg;
+        --delay: 3.05s;
+        left: 8%;
+        bottom: 7%;
+      }
+
+      .decor:nth-of-type(4) {
+        --width: 225px;
+        --rotate: 13deg;
+        --delay: 3.2s;
+        right: 8%;
+        bottom: 8%;
+      }
+
+      .decor:nth-of-type(5) {
+        --width: 222px;
+        --rotate: 7deg;
+        --delay: 3.35s;
+        left: 43%;
+        top: 3%;
+      }
+
+      .decor:nth-of-type(6) {
+        --width: 207px;
+        --rotate: -10deg;
+        --delay: 3.5s;
+        left: 47%;
+        bottom: 4%;
+      }
+
+      @keyframes write {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @keyframes fillText {
+        to {
+          fill: currentColor;
+        }
+      }
+
+      @keyframes fadeUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes decorIn {
+        to {
+          opacity: 1;
+          transform: translateY(0) rotate(var(--rotate));
+        }
+      }
+
+      @keyframes messageOut {
+        to {
+          opacity: 0;
+          transform: translateY(-18px) scale(0.98);
+        }
+      }
+
+      @keyframes letterWrapIn {
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes unfoldLetter {
+        0% {
+          opacity: 0;
+          transform: translateY(26px) scale(0.92);
+        }
+
+        45% {
+          opacity: 1;
+          transform: translateY(-4px) scale(1.015);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @media (max-width: 760px) {
+        body {
+          background-size: 300px 304px;
+        }
+
+        .scene {
+          padding: 26px 14px;
+        }
+
+        .message {
+          width: min(410px, 96vw);
+          gap: 16px;
+        }
+
+        .handwriting {
+          width: min(410px, 98vw);
+          transform: translateY(-4px);
+        }
+
+        .continue {
+          padding: 12px 28px 13px;
+          font-size: 18px;
+        }
+
+        .letter-stage {
+          padding: 14px 10px;
+        }
+
+        .letter-wrap {
+          width: 94vw;
+          min-height: 84dvh;
+        }
+
+        .letter-paper {
+          width: min(340px, 88vw);
+          max-height: 78dvh;
+          padding: 22px 20px;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .decor:nth-of-type(1) {
+          --width: 96px;
+          left: 2%;
+          top: 11%;
+        }
+
+        .decor:nth-of-type(2) {
+          --width: 108px;
+          right: 3%;
+          top: 12%;
+        }
+
+        .decor:nth-of-type(3) {
+          --width: 99px;
+          left: 2%;
+          bottom: 16%;
+        }
+
+        .decor:nth-of-type(4) {
+          --width: 105px;
+          right: 4%;
+          bottom: 15%;
+        }
+
+        .decor:nth-of-type(5) {
+          --width: 99px;
+          left: 43%;
+          top: 5%;
+        }
+
+        .decor:nth-of-type(6) {
+          --width: 102px;
+          left: 47%;
+          bottom: 8%;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .decor:nth-of-type(1) {
+          --width: 87px;
+          left: 3%;
+          top: 12%;
+        }
+
+        .decor:nth-of-type(2) {
+          --width: 96px;
+          right: 4%;
+          top: 13%;
+        }
+
+        .decor:nth-of-type(3) {
+          --width: 90px;
+          left: 3%;
+          bottom: 17%;
+        }
+
+        .decor:nth-of-type(4) {
+          --width: 96px;
+          right: 4%;
+          bottom: 17%;
+        }
+
+        .decor:nth-of-type(5) {
+          --width: 90px;
+          left: 42%;
+          top: 5%;
+        }
+
+        .decor:nth-of-type(6) {
+          --width: 93px;
+          left: 44%;
+          bottom: 8%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="scene">
+      <img class="decor" src="assets/decor-flower-soft.png" alt="">
+      <img class="decor" src="assets/decor-letter-bow.png" alt="">
+      <img class="decor" src="assets/decor-bouquet.png" alt="">
+      <img class="decor" src="assets/decor-lily.png" alt="">
+      <img class="decor" src="assets/decor-wildflowers.png" alt="">
+      <img class="decor" src="assets/decor-blossom-hanging.png" alt="">
+
+      <section class="message" aria-label="Поздравление">
+        <svg class="handwriting" viewBox="0 0 1000 360" role="img" aria-labelledby="title">
+          <title id="title">Очень сильно люблю</title>
+          <text x="500" y="135" text-anchor="middle" font-size="123">Очень сильно</text>
+          <text class="accent" x="500" y="285" text-anchor="middle" font-size="168">люблю</text>
+        </svg>
+        <button class="continue" type="button">Продолжить</button>
+      </section>
+
+      <section class="letter-stage" aria-hidden="true">
+        <div class="letter-wrap">
+          <article class="letter-paper" tabindex="-1" aria-label="Письмо">
+            <p>Инкара, я просто хочу напомнить тебе, что очень сильно тебя люблю.</p>
+            <p>Не из-за какого-то повода, а просто потому что ты это ты.</p>
+            <p>Мне очень повезло, что ты есть в моей жизни. Рядом с тобой даже обычные моменты становятся теплее, спокойнее и важнее. Я правда ценю тебя, твою искренность, твою глубину, твой милый юмор и то, какая ты настоящая.</p>
+            <p>Отдельно я хочу сказать, что твой внутренний мир для меня это настоящий повод для восхищения. Мне нравится то, как ты думаешь, как чувствуешь, как смотришь на вещи и как остаёшься собой. В тебе есть глубина, которую хочется узнавать всё больше и больше.</p>
+            <p>С каждым днём я всё больше понимаю, что моя любовь к тебе это не просто сильное чувство. Она стала зрелой, осознанной и по-настоящему глубокой. Мне не всегда хватает слов, чтобы описать, насколько она большая. Иногда мне кажется, что её невозможно выразить полностью, потому что ни одни слова не способны передать всё то, что я чувствую к тебе.</p>
+            <p>Каждый момент, проведённый рядом с тобой, остаётся в моей памяти и сердце. Даже самые простые разговоры, улыбки, взгляды и минуты рядом с тобой для меня бесценны. Я уверен, что буду помнить их всю свою жизнь, потому что они связаны с человеком, который стал для меня по-настоящему важным.</p>
+            <p>Я люблю тебя. И мне хочется, чтобы ты всегда помнила это, даже в те моменты, когда меня нет рядом.</p>
+            <p>❤️</p>
+            <p>От всего сердца,<br>Нурасыл</p>
+          </article>
+        </div>
+      </section>
+      <canvas class="confetti-canvas" aria-hidden="true"></canvas>
+    </main>
+    <script>
+      const scene = document.querySelector(".scene");
+      const continueButton = document.querySelector(".continue");
+      const letterStage = document.querySelector(".letter-stage");
+      const letterPaper = document.querySelector(".letter-paper");
+      const confettiCanvas = document.querySelector(".confetti-canvas");
+      const confettiContext = confettiCanvas.getContext("2d");
+      const music = new Audio("assets/music.mp3");
+      const fadeDuration = 5000;
+      const maxVolume = 0.72;
+      const confettiColors = ["#d85f78", "#f3a6b8", "#ffd8e2", "#fff5f8", "#b97883"];
+      let musicStarted = false;
+      let fadeOutStarted = false;
+      let musicFadeFrame = 0;
+      let confettiFrame = 0;
+      let confettiPieces = [];
+
+      music.preload = "auto";
+      music.loop = false;
+      music.volume = 0;
+
+      function fadeVolume(from, to, duration, onDone) {
+        cancelAnimationFrame(musicFadeFrame);
+
+        const start = performance.now();
+
+        function tick(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          music.volume = from + (to - from) * progress;
+
+          if (progress < 1) {
+            musicFadeFrame = requestAnimationFrame(tick);
+            return;
+          }
+
+          if (onDone) {
+            onDone();
+          }
+        }
+
+        musicFadeFrame = requestAnimationFrame(tick);
+      }
+
+      function startMusic() {
+        if (musicStarted) {
+          return;
+        }
+
+        musicStarted = true;
+        fadeOutStarted = false;
+        music.currentTime = 0;
+        music.volume = 0;
+
+        music.play()
+          .then(() => fadeVolume(0, maxVolume, fadeDuration))
+          .catch(() => {
+            musicStarted = false;
+          });
+      }
+
+      function startMusicOnFirstInteraction() {
+        startMusic();
+        window.removeEventListener("pointerdown", startMusicOnFirstInteraction);
+        window.removeEventListener("keydown", startMusicOnFirstInteraction);
+        window.removeEventListener("touchstart", startMusicOnFirstInteraction);
+      }
+
+      function resizeConfettiCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        confettiCanvas.width = Math.floor(window.innerWidth * ratio);
+        confettiCanvas.height = Math.floor(window.innerHeight * ratio);
+        confettiCanvas.style.width = `${window.innerWidth}px`;
+        confettiCanvas.style.height = `${window.innerHeight}px`;
+        confettiContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+
+      function launchConfetti() {
+        resizeConfettiCanvas();
+
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const count = Math.min(150, Math.max(80, Math.floor(width / 8)));
+
+        confettiPieces = Array.from({ length: count }, () => ({
+          x: Math.random() * width,
+          y: height + 20 + Math.random() * 90,
+          width: 6 + Math.random() * 8,
+          height: 10 + Math.random() * 12,
+          color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+          rotation: Math.random() * Math.PI,
+          spin: (Math.random() - 0.5) * 0.22,
+          velocityX: (Math.random() - 0.5) * 5,
+          velocityY: -10 - Math.random() * 12,
+          gravity: 0.28 + Math.random() * 0.12,
+          life: 0,
+          maxLife: 120 + Math.random() * 45,
+        }));
+
+        cancelAnimationFrame(confettiFrame);
+        animateConfetti();
+      }
+
+      function animateConfetti() {
+        confettiContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+        confettiPieces = confettiPieces.filter((piece) => {
+          piece.life += 1;
+          piece.x += piece.velocityX;
+          piece.y += piece.velocityY;
+          piece.velocityY += piece.gravity;
+          piece.rotation += piece.spin;
+
+          const opacity = Math.max(0, 1 - piece.life / piece.maxLife);
+
+          confettiContext.save();
+          confettiContext.globalAlpha = opacity;
+          confettiContext.translate(piece.x, piece.y);
+          confettiContext.rotate(piece.rotation);
+          confettiContext.fillStyle = piece.color;
+          confettiContext.fillRect(-piece.width / 2, -piece.height / 2, piece.width, piece.height);
+          confettiContext.restore();
+
+          return opacity > 0 && piece.y < window.innerHeight + 80;
+        });
+
+        if (confettiPieces.length > 0) {
+          confettiFrame = requestAnimationFrame(animateConfetti);
+          return;
+        }
+
+        confettiContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      }
+
+      window.addEventListener("load", startMusic);
+      window.addEventListener("pointerdown", startMusicOnFirstInteraction, { once: true });
+      window.addEventListener("keydown", startMusicOnFirstInteraction, { once: true });
+      window.addEventListener("touchstart", startMusicOnFirstInteraction, { once: true });
+      window.addEventListener("resize", resizeConfettiCanvas);
+
+      music.addEventListener("timeupdate", () => {
+        if (!Number.isFinite(music.duration) || music.duration <= fadeDuration / 1000) {
+          return;
+        }
+
+        const timeLeft = music.duration - music.currentTime;
+
+        if (timeLeft <= fadeDuration / 1000 && !fadeOutStarted) {
+          fadeOutStarted = true;
+          fadeVolume(music.volume, 0, Math.max(timeLeft * 1000, 300));
+        }
+      });
+
+      music.addEventListener("ended", () => {
+        fadeOutStarted = false;
+        music.currentTime = 0;
+        music.volume = 0;
+        music.play()
+          .then(() => fadeVolume(0, maxVolume, fadeDuration))
+          .catch(() => {
+            musicStarted = false;
+          });
+      });
+
+      resizeConfettiCanvas();
+
+      continueButton.addEventListener("click", () => {
+        launchConfetti();
+        scene.classList.add("is-open");
+        letterStage.setAttribute("aria-hidden", "false");
+        window.setTimeout(() => {
+          letterPaper.focus({ preventScroll: true });
+        }, 1650);
+      });
+    </script>
+  </body>
+</html>

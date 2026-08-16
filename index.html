@@ -722,7 +722,7 @@ body.is-loading .music-btn{visibility:hidden;}
 
 <button class="music-btn" id="musicBtn" aria-label="toggle music">♪</button>
 <audio id="bgAudio" loop preload="none">
-  <source src="data:audio/mpeg;base64," type="audio/mpeg">
+  <source src="assets/song.mp3" type="audio/mpeg">
 </audio>
 
 <div id="petals"></div>
@@ -1091,6 +1091,7 @@ body.is-loading .music-btn{visibility:hidden;}
   });
   openCta.addEventListener("click", function(){
     goTo("1");
+    startMusic();
   });
 
   /* ---------------- SCENE 1: handwriting Happy Birthday ---------------- */
@@ -1330,6 +1331,18 @@ body.is-loading .music-btn{visibility:hidden;}
   var musicBtn = document.getElementById("musicBtn");
   var audio = document.getElementById("bgAudio");
   var playing = false;
+
+  // `loop` on the <audio> element already makes it restart forever on
+  // its own once it reaches the end — no manual "ended" handling needed.
+  function startMusic(){
+    if(playing) return;
+    audio.play().then(function(){
+      playing = true;
+      musicBtn.classList.add("playing");
+      musicBtn.textContent = "♫";
+    }).catch(function(){});
+  }
+
   musicBtn.addEventListener("click", function(){
     playing = !playing;
     musicBtn.classList.toggle("playing", playing);

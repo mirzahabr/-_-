@@ -66,6 +66,38 @@ body::after{
 
 #app{position:relative;z-index:2;height:100vh;height:100dvh;overflow:hidden;}
 
+/* ---------- loading gate: hides everything until wallpaper + fonts
+   are actually ready, so the busy background never "pops in" ---------- */
+#loader{
+  position:fixed;inset:0;
+  z-index:9999;
+  display:flex;
+  flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:18px;
+  background:linear-gradient(160deg,var(--blush) 0%,var(--rose) 55%,var(--muted-rose) 100%);
+  transition:opacity .7s ease;
+}
+#loader.hide{opacity:0;pointer-events:none;}
+#loaderGif{
+  width:clamp(84px,22vw,120px);
+  height:auto;
+  filter:drop-shadow(0 10px 18px rgba(120,80,80,.2));
+  animation:bob 2.4s ease-in-out infinite;
+}
+.loader-label{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:16px;
+  color:#fff;
+  text-shadow:0 2px 8px rgba(90,40,50,.35);
+  letter-spacing:.02em;
+}
+body.is-loading #app,
+body.is-loading #petals,
+body.is-loading .progress,
+body.is-loading .music-btn{visibility:hidden;}
+
 /* ---------- progress dots ---------- */
 .progress{
   position:fixed;
@@ -671,7 +703,13 @@ body::after{
 }
 </style>
 </head>
-<body>
+<body class="is-loading">
+
+<div id="loader">
+  <img id="loaderGif" alt="" loading="eager"
+       src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmswaGI0dW5mMDJ6eHpmd3p3MHlmMW16NTd5ZGtuY3Z0YnpzYWxudyZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9dHM/txh88yJygPWC1q3rtd/giphy.gif">
+  <div class="loader-label">a little something is on its way…</div>
+</div>
 
 <div class="progress" id="progress">
   <div class="dot heart" data-i="0"></div>
@@ -876,6 +914,54 @@ body::after{
 <script>
 (function(){
   "use strict";
+
+  /* ---------- loading gate ----------
+     Keep the whole site hidden behind #loader until the wallpaper image,
+     webfonts and the loader's own sticker are actually decoded — the
+     floral background is a large tiled image and used to visibly pop
+     in a few frames after the rest of the page. A hard timeout still
+     releases the gate if something stalls, so a slow asset can never
+     strand the user on the loading screen forever. */
+  (function loadingGate(){
+    var minShow = 900;
+    var maxWait = 6000;
+    var start = Date.now();
+    var settled = false;
+
+    function preloadImage(src){
+      return new Promise(function(resolve){
+        var img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = src;
+      });
+    }
+
+    var fontsReady = (document.fonts && document.fonts.ready)
+      ? document.fonts.ready.catch(function(){})
+      : Promise.resolve();
+
+    var tasks = [
+      preloadImage("assets/wallpaper.png"),
+      preloadImage(document.getElementById("loaderGif").src),
+      fontsReady
+    ];
+
+    function release(){
+      if(settled) return;
+      settled = true;
+      var elapsed = Date.now() - start;
+      var wait = Math.max(0, minShow - elapsed);
+      setTimeout(function(){
+        document.body.classList.remove("is-loading");
+        var loader = document.getElementById("loader");
+        loader.classList.add("hide");
+        setTimeout(function(){ loader.remove(); }, 750);
+      }, wait);
+    }
+
+    Promise.all(tasks).then(release);
+    setTimeout(release, maxWait);
+  })();
 
   var scenes = ["0","1","2","3a","3b","3c","4","5"];
   var progressMap = {"0":0,"1":1,"2":2,"3a":2,"3b":2,"3c":2,"4":3,"5":4};
